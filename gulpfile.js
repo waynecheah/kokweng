@@ -1,7 +1,7 @@
 'use strict';
 // Generated on 2014-03-04 using generator-gulp-webapp 0.0.4
 
-var gulp = require('gulp');
+var gulp    = require('gulp');
 var wiredep = require('wiredep').stream;
 
 // Load plugins
@@ -20,6 +20,7 @@ gulp.task('scripts', function () {
 gulp.task('html', function () {
     return gulp.src('app/*.html')
       .pipe($.useref())
+      .pipe($.htmlmin({ collapseWhitespace: true , removeComments: true, collapseBooleanAttributes: true, removeRedundantAttributes: true, removeOptionalTags: true }))
       .pipe(gulp.dest('dist'))
       .pipe($.size());
 });
@@ -44,8 +45,17 @@ gulp.task('clean', function () {
 // Bundle
 gulp.task('bundle', ['scripts'], $.bundle('./app/*.html'));
 
+// Copy
+gulp.task('copy', function(){
+    gulp.src('./app/fonts/**', { base:'./app' })
+      .pipe(gulp.dest('dist'));
+
+    return gulp.src(['./app/.htaccess', './app/*.ico', './app/*.txt'])
+      .pipe(gulp.dest('dist'));
+});
+
 // Build
-gulp.task('build', ['html', 'bundle', 'images']);
+gulp.task('build', ['html', 'bundle', 'images', 'copy']);
 
 // Default task
 gulp.task('default', ['clean'], function () {
