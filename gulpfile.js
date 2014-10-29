@@ -4,6 +4,14 @@
 var gulp    = require('gulp');
 var wiredep = require('wiredep').stream;
 
+var aws = {
+    "key": "AKIAISM3LPVRAGN67KRA",
+    "secret": "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",
+    "bucket": "waynecheah",
+    "region": "ap-southeast-1",
+    "distributionId": "EYZMQQ64L1R3R"
+};
+
 // Load plugins
 var $ = require('gulp-load-plugins')();
 
@@ -11,8 +19,8 @@ var $ = require('gulp-load-plugins')();
 // Scripts
 gulp.task('scripts', function () {
     return gulp.src('app/scripts/**/*.js')
-        .pipe($.jshint('.jshintrc'))
-        .pipe($.jshint.reporter('default'))
+        //.pipe($.jshint('.jshintrc'))
+        //.pipe($.jshint.reporter('default'))
         .pipe($.size());
 });
 
@@ -37,9 +45,23 @@ gulp.task('images', function () {
         .pipe($.size());
 });
 
+// Revisioning
+gulp.task('rev', function () {
+    return gulp.src('dist/**')
+        .pipe($.revAll({ ignore: ['_s3/*', '.DS_Store', 'empty', '404.html', 'index.html'] }))
+//        .pipe(gulp.dest('dist/_s3'));
+        .pipe($.gzip())
+        .pipe($.s3(aws, {
+            gzippedOnly: true,
+            headers: { 'Cache-Control': 'max-age=315360000, no-transform, public' },
+            uploadPath: '/_v2/'
+        }))
+        .pipe($.cloudfront(aws));
+});
+
 // Clean
 gulp.task('clean', function () {
-    return gulp.src(['dist/scripts', 'dist/images'], {read: false}).pipe($.clean());
+    return gulp.src('dist', { read: false }).pipe($.rimraf());
 });
 
 // Bundle
@@ -55,7 +77,9 @@ gulp.task('copy', function(){
 });
 
 // Build
-gulp.task('build', ['html', 'bundle', 'images', 'copy']);
+gulp.task('build', ['html', 'bundle', 'images', 'copy'], function(){
+    gulp.start('rev');
+});
 
 // Default task
 gulp.task('default', ['clean'], function () {
